@@ -20,6 +20,10 @@ Lab 5 adds a second flow after explicit consent: **wallet transfer → Alchemy N
 
 ## Concepts
 
+Lab 6 adds a permission check: **public address + named tokens + named spenders → current allowance table**. Balances and permissions are independent. Zero balance does not erase an approval, and a zero allowance only answers for the exact pair read. See [Lab 6](../labs/06-allowance-check/README.md).
+
+Compatibility checked 2026-09-21: [Transaction Simulation is announced for deprecation on September 30, 2026](https://www.alchemy.com/docs/reference/simulation). The simulation descriptions below explain existing Lab 1/2 behavior, not a future availability guarantee. Those paths require migration review; Lab 6 does not depend on them.
+
 **MCP (Model Context Protocol).** An open standard that lets an AI agent discover a server's tools and call them. Claude Code, Cursor, VS Code, Codex and Claude Desktop all speak it.
 
 **Alchemy MCP server.** Alchemy's hosted MCP endpoint. It wraps Alchemy's JSON-RPC, token, NFT, simulation, and Solana APIs as MCP tools. Authentication is OAuth with your Alchemy account.
@@ -70,10 +74,10 @@ Alchemy's public MCP documentation describes access to 100+ blockchains. The con
 | Notify | **`list_webhooks`**, **`get_webhook_addresses`**, **`create_webhook`**, **`delete_webhook`** | Lab 5 only. Creation requires an exact proposal and explicit consent; deletion requires separate confirmation of the new ID. MCP handles configuration and readback; delivery evidence comes from the receiver or Alchemy dashboard. Reads redact secrets |
 | JSON-RPC reads | **`ethBlockNumber`**, **`ethGetBalance`**, **`ethGetCode`**, **`ethGetStorageAt`**, **`ethGetTransactionCount`**, **`ethCall`**, **`ethGetTransactionByHash`**, **`ethGetTransactionReceipt`**, **`ethGetLogs`**, `ethGasPrice`, **`web3Sha3`** | Standard Ethereum RPC on any EVM network. Logs are capped at a 10-block range on Free |
 | Transfers | **`getAssetTransfers`** | History of ETH, ERC-20, ERC-721, ERC-1155 movements for an address or a token contract |
-| Tokens | **`getTokenBalancesByAddress`**, **`getTokensByAddress`**, **`getTokenMetadata`**, **`getTokenAllowance`** | Both balance tools take a `networks` list and answer for every chain in one request. `getTokensByAddress` adds metadata and prices per row |
+| Tokens | **`getTokenBalancesByAddress`**, **`getTokensByAddress`**, **`getTokenBalances`**, **`getTokenMetadata`**, **`getTokenAllowance`** | The first two accept multiple networks. Lab 6 uses single-network `getTokenBalances` with an explicit token list, then allowance reads for each selected spender. Enhanced reads are current-state calls, not an atomic snapshot |
 | Prices | **`getTokenPricesByAddress`**, **`getTokenPricesBySymbol`**, **`getHistoricalTokenPrices`** | USD from Alchemy's feed. History at 5-minute, hourly or daily intervals, up to a year of daily points. Prices may not exist for every token |
 | NFTs | **`getNFTsForOwner`**, **`getContractMetadata`**, `getNFTMetadata`, `getOwnersForContract`, **`isSpamContract`**, `getFloorPrice` | Spam filters are paid |
-| Simulation | **`simulateAssetChanges`**, **`simulateExecution`**, `simulateAssetChangesBundle` | Free. Read-only preview of an unsigned transaction |
+| Simulation | **`simulateAssetChanges`**, **`simulateExecution`**, `simulateAssetChangesBundle` | Single simulations have a Free path; bundles require PAYG/Enterprise. Deprecation announced for September 30, 2026; see [official FAQ](https://www.alchemy.com/docs/reference/simulation-faqs) |
 | Trace / debug | `traceTransaction`, `traceCall`, `debugTraceTransaction`, `debugTraceCall` | Paid |
 | Account abstraction | `estimateUserOperationGas`, `getUserOperationReceipt`, `requestGasAndPaymasterAndData` | For ERC-4337 flows, planned lab |
 | Solana RPC | **`solana_getEpochInfo`**, **`solana_getAccountInfo`**, **`solana_getTokenAccountsByOwner`**, **`solana_getSignaturesForAddress`**, **`solana_getTransaction`**, `solana_getBalance`, `solana_getProgramAccounts`, `solana_requestAirdrop` | Standard Solana RPC, 50 tools, on `solana-mainnet` and `solana-devnet`. Lab 4. The airdrop tool is devnet-only and the labs never call it |
@@ -85,6 +89,9 @@ The server also publishes MCP resources at `alchemy://networks`, `alchemy://netw
 
 - **Calldata**: the hex payload of a transaction. The first 4 bytes select the function, the rest are its arguments.
 - **Approve / allowance**: an ERC-20 permission letting a spender move your tokens. "Unlimited" means the maximum uint256.
+- **Spender**: the exact address authorized in a token allowance. A dapp can use multiple spender contracts; a brand name alone is not an address.
+- **Balance covered**: in Lab 6, the smaller of the observed token balance and allowance for one pair. An upper bound from those reads, not proof of transferability. Do not sum it across spenders.
+- **Permit2 layer**: a token's allowance to Permit2 and Permit2's downstream app permissions are separate. Lab 6 reads only the first layer.
 - **Mined transaction**: one already included in a block. It has a hash and a receipt. You can inspect it but not change it.
 - **Unsigned call**: a transaction you have not signed yet. It can be simulated. This is where a preflight is useful.
 - **Receipt**: the result of a mined transaction: success or failure, gas used, and the event logs it emitted.

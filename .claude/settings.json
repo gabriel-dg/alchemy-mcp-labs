@@ -28,6 +28,7 @@
       "mcp__alchemy__getTokenBalancesByAddress",
       "mcp__alchemy__getTokensByAddress",
       "mcp__alchemy__getTokenAllowance",
+      "mcp__alchemy__getTokenBalances",
       "mcp__alchemy__getTokenMetadata",
       "mcp__alchemy__getTokenPricesByAddress",
       "mcp__alchemy__getTokenPricesBySymbol",

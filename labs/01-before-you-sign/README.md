@@ -1,5 +1,7 @@
 # Lab 1: before you sign
 
+Compatibility note (2026-09-21): Alchemy [announces Transaction Simulation deprecation for September 30, 2026](https://www.alchemy.com/docs/reference/simulation). Scenario B depends on those endpoints and needs migration review. The dated examples below document earlier behavior; do not treat an unavailable simulation as a successful preflight. [Lab 6](../06-allowance-check/README.md) reads existing permissions without simulation.
+
 ## Goal
 
 Get a read-only safety briefing from your agent before you sign something. You give it one of three inputs and it returns a report with asset changes, risk flags, and a verdict: **OK**, **REVIEW**, or **DO NOT SIGN**.

@@ -1,5 +1,7 @@
 # Lab 2: contract inspector
 
+Compatibility note (2026-09-21): the decoded-ABI probe uses `simulateExecution`, part of the [Transaction Simulation APIs announced for deprecation on September 30, 2026](https://www.alchemy.com/docs/reference/simulation). That signal needs migration review; an unavailable probe cannot establish verified source. Other read paths and dated examples are separate from that availability question.
+
 ## Goal
 
 Answer "what is this address?" without leaving your agent. You give it an address and get back its type, identity, a table of trust signals, red flags, and one of four assessments: **ESTABLISHED**, **UNCERTAIN**, **RED FLAGS**, or **NOT A CONTRACT**.
