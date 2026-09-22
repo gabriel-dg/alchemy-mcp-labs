@@ -67,13 +67,13 @@ To understand permission states before trying your own address, read this **fict
 
 The [offline behavioral tests](../../skills/allowance-check/examples/fixture-review.md) check these distinctions with synthetic data. No permission is changed to manufacture an interesting live demo.
 
-Each live report names the address, network, observation start with a full UTC date and time, start/end blocks, selected tokens/spenders and coverage count. Its table shows Token, Spender, Balance, Permission, Balance covered and Note. Every requested pair stays visible, even when zero or unknown. Full public contract addresses and the tools used make the result inspectable; app/account identifiers are omitted from published logs.
+Each live report names the address, network, observation start with a full UTC date and time, start/end blocks, selected tokens/spenders and coverage count. Each token has a compact block: its balance, a three-column table of Spender, Permission and Balance covered, and any findings underneath. Long values may use bullets instead. Every requested pair stays visible, even when zero or unknown. Full public contract addresses and the tools used make the result inspectable; app/account identifiers are omitted from published logs.
 
 ## Reading the output
 
 **Permission is separate from balance.** When an application asks you to approve a token, that permission is stored in the token contract. Closing the app or disconnecting the wallet does not itself clear it. A zero balance also does not clear an ordinary ERC-20 allowance. Read the two columns together; the [ERC-20 specification](https://eips.ethereum.org/EIPS/eip-20) defines balance and allowance as separate reads.
 
-**The four statuses.** `NONE` means zero allowance for that exact pair now. `LIMITED` means a finite positive amount. `UNLIMITED` means the maximum uint256 allowance; the report explains it instead of showing a wall of digits. `UNKNOWN` means the read did not establish the permission. It is never treated as zero.
+**The four statuses.** `NONE` means zero allowance for that exact pair now. `LIMITED` means a finite positive amount. `UNLIMITED` means the maximum uint256 allowance; the report explains it instead of showing a wall of digits. `UNKNOWN` means the read did not establish the permission. It is never treated as zero. A current NONE result does not tell you whether a permission existed before or why it became zero; this lab does not query approval history.
 
 **Balance covered is an upper bound.** It is the smaller of balance and allowance. It does not prove a transfer could execute: contract rules and other permissions can restrict it. Several spenders can refer to the same tokens, so adding the rows would double-count. There is no "total funds at risk" score.
 
@@ -91,7 +91,7 @@ Each live report names the address, network, observation start with a full UTC d
 
 **Check a specific app.** Replace `Spenders:` with the exact Ethereum spender address from your approval details or the app's documentation. Replace `Tokens:` with the token contract address if it is not one of the defaults. Use up to three comma-separated addresses in each list. Each custom list replaces that side of the defaults. A brand name alone is not enough to identify the contract.
 
-**Another chain?** Version 0.1.4 deliberately covers `eth-mainnet` only; token and router addresses are network-specific. Do not reuse this checklist on Base or Arbitrum by changing only the network line.
+**Another chain?** Version 0.1.5 deliberately covers `eth-mainnet` only; token and router addresses are network-specific. Do not reuse this checklist on Base or Arbitrum by changing only the network line.
 
 **Use it by name.** In Claude Code inside this repo: `/allowance-check 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D`. In other agents, use the copy-paste prompt. Add `Format: markdown+json` for a structured result.
 
@@ -101,12 +101,15 @@ The reusable building block is a bounded permission check: **owner + token list 
 
 Alchemy MCP lets you explore it conversationally. The same reads are available through the [Token API](https://www.alchemy.com/docs/data/token-api/token-api-endpoints/alchemy-get-token-allowance); the [MCP server documentation](https://www.alchemy.com/docs/alchemy-mcp-server) describes the agent interface. This lab uses no Transaction Simulation endpoints.
 
+The [local computation helper](../../skills/allowance-check/references/computation.md) calculates amounts and coverage with exact integers and has executable synthetic tests for positive, zero and unknown results. It makes no network requests.
+
 The optional JSON report preserves raw amounts as strings, keeps failed reads null and names the checked addresses. A production application should maintain its own network-specific token/spender list and expose the same coverage limits. For a coherent single-block snapshot, use block-pinned contract reads; the enhanced methods used here observe current state across several calls.
 
 ## Troubleshooting
 
 | Symptom | What to check |
 |---|---|
+| Output is cut off in the terminal | Ask for per-token blocks or per-spender bullets and copy the complete message. Full addresses belong on separate lines, not inside a wide table. |
 | Everything says NONE | Confirm the network and exact token/spender addresses; this is a small checklist, not an approval-discovery service. |
 | Balance is zero but permission is positive | That is a useful finding, not a contradiction. Permission and balance are separate contract values. |
 | A row says UNKNOWN | Read Gaps. Missing data, errors or empty RPC responses are not proof of zero allowance. |

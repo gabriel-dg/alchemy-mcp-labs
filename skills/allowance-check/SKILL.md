@@ -2,7 +2,7 @@
 name: allowance-check
 description: Check existing ERC-20 spending permissions with Alchemy MCP. Use when the user asks what can still spend my tokens, check old approvals, or review allowances for a wallet. Reads a bounded token-spender list on Ethereum mainnet and explains active permissions, including those with zero balance. Does not discover every spender or revoke approvals.
 metadata:
-  version: "0.1.4"
+  version: "0.1.5"
   type: workflow
 ---
 
@@ -46,7 +46,7 @@ No fallback metadata calls, spender bytecode reads, price requests, or automatic
 
 ## Interpret without overclaiming
 
-Compute balances, allowances, comparisons and formatting through a deterministic local tool using exact integer arithmetic (e.g. BigInt), not mental arithmetic. Never convert uint256 amounts through floating point. Store raw amounts as decimal strings. `uint256 max` is `2^256 - 1`, computed locally. Local computation is not an Alchemy call and must not send transactions or fetch data outside the allowed tools.
+Compute balances, allowances, comparisons and formatting through a deterministic local tool using exact integer arithmetic (e.g. BigInt), not mental arithmetic. Never convert uint256 amounts through floating point. Store raw amounts as decimal strings. `uint256 max` is `2^256 - 1`, computed locally. Local computation is not an Alchemy call and must not send transactions or fetch data outside the allowed tools. Use [scripts/compute.mjs](scripts/compute.mjs) when Node.js is available; [references/computation.md](references/computation.md) describes its normalized input and local tests. Otherwise perform the same exact arithmetic in an available local tool. The helper computes values and coverage; it does not call Alchemy or replace error/fallback decisions.
 
 Each pair has exactly one allowance status:
 
@@ -66,15 +66,15 @@ Highlight:
 - Positive allowance and positive balance: permission overlaps the observed balance; review whether it is still needed.
 - Positive allowance and zero balance: **"Permission remains with zero balance"**. An ordinary ERC-20 allowance does not disappear when the balance becomes zero; it can matter for future deposits. This does not establish how old the approval is or that the owner forgot it.
 - Positive allowance and unknown balance: permission is known, balance coverage is unknown.
-- Permit2: label the row **"Token → Permit2 only"**, including zero rows. This reads the ERC-20 permission to Permit2, not Permit2's downstream application permissions, expirations, or signed messages. Do not say every router can spend, or that an application's Permit2 permissions have been audited.
+- Permit2: mark each row and explain **"Token → Permit2 only"** beside it or in the per-token footnote, including zero rows. This reads the ERC-20 permission to Permit2, not Permit2's downstream application permissions, expirations, or signed messages. Do not say every router can spend, or that an application's Permit2 permissions have been audited.
 
-Unlimited is not proof of compromise; a known spender is not a safety guarantee. Zero means no allowance now for that pair, not "never approved" or "wallet safe". NFTs, native ETH, unlisted tokens/spenders, other chains, account delegation and unsubmitted signed permits are outside coverage. WETH is a token; it is not native ETH.
+Unlimited is not proof of compromise; a known spender is not a safety guarantee. Zero means no allowance now for that pair, not "never approved" or "wallet safe". Do not infer a past approval, revocation, or the reason the value became zero; no history was queried. NFTs, native ETH, unlisted tokens/spenders, other chains, account delegation and unsubmitted signed permits are outside coverage. WETH is a token; it is not native ETH.
 
 Keep progress updates and conclusions tied to the returned data. A router label does not establish that balances or allowances must be zero, or that routers never hold tokens or grant permissions. Explain zero balances and zero allowances as separate observations. A successful all-zero control exercises those reads only; it does not validate positive or unlimited permissions, error handling, or the entire skill.
 
 ## Report
 
-Use the user's language, with short plain-language explanations. Keep status codes stable. Lead with one sentence giving the number of active permissions **among the checked pairs**, with the zero-balance finding if present. Do not use a wallet-wide safety verdict.
+Use the user's language, with short plain-language explanations. Keep status codes stable. Lead with one sentence giving the number of active permissions **among the checked pairs**, with the zero-balance finding if present. Do not use a wallet-wide safety verdict. Translate headings and explanations into the user's language; preserve status codes and tool names.
 
 ```markdown
 # What can still spend these tokens?
@@ -87,16 +87,23 @@ One-sentence finding limited to the checked pairs, including unknown allowance c
 - **Coverage:** T tokens × S spenders = P requested pairs; K allowance reads succeeded, U unknown
 
 ## Permissions
-| Token | Spender | Balance | Permission | Balance covered | Note |
+Repeat a compact block for each token:
+**Token label — balance: exact amount and unit, or unknown**
+
+| Spender | Permission | Balance covered |
+|---|---|---|
+One row per selected spender; show status and exact finite amount (or Unlimited/unknown).
+
+Place findings below the table, keyed to the spender. Mark every Permit2 row with an asterisk and explain "* Token → Permit2 only" immediately below that token's table, including zero rows. Use per-spender bullets instead of a table when long amounts or labels would make the table unreadable; preserve every value.
 
 ## What this means
 Explain the most useful findings and a concrete next step. Identify the exact token/spender to review; if the owner wants to change a permission, that is a separate wallet action outside this lab. Do not construct revoke calldata or launch a signing flow.
 
 ## Addresses checked
-List every full token and spender address once with its label and registry/user-supplied provenance.
+List every full token and spender address once with its label and registry/user-supplied provenance. Put each address on its own line, outside tables, and preserve all 42 characters; wrap visually rather than shortening it.
 
 ## Tools used
-Exact names, order, counts, and any fallback/retry.
+Number actual Alchemy attempts in invocation order; consecutive batches can use ranges (for example, 5–7: getTokenMetadata, three attempts). Include failures, retries and fallbacks. Derive the total from this ledger; UI activity groups are not a reliable call count. List local computation separately.
 
 ## Gaps
 - **Read failures:** List failed reads, or say "No failed reads" when all succeeded.
@@ -104,7 +111,7 @@ Exact names, order, counts, and any fallback/retry.
 - **Changes:** No permissions were changed.
 ```
 
-For all-zero results, say "No active allowances in the checked list." Do not replace this finding with "nothing to review" or "no further action needed"; the reads establish only the current allowances for the checked pairs, not whether a broader review is needed. For partial results, say how many remain unknown next to the summary. Always display every requested pair. Balance/metadata gaps are reported separately from the allowance-read count. Before delivering the report, check that Gaps includes both read failures and coverage exclusions. Successful reads do not remove the exclusions: never reduce the entire section to "None" or "No failed reads".
+For all-zero results, translate this explanation: "No active allowances in the checked list. These reads show current permissions only; their history was not queried." Do not replace this finding with "nothing to review" or "no further action needed"; the reads establish only the current allowances for the checked pairs, not whether a broader review is needed. For partial results, say how many remain unknown next to the summary. Always display every requested pair. Balance/metadata gaps are reported separately from the allowance-read count. Before delivering the report, compare it with the computed rows and invocation ledger: owner matches the input, every selected pair appears once, addresses are complete, allowance counts and call totals agree, and no explanation invents approval history. Check that Gaps includes both read failures and coverage exclusions. Successful reads do not remove the exclusions: never reduce the entire section to "None" or "No failed reads".
 
 With `Format: markdown+json`, append one valid JSON object containing `schemaVersion` (`"1"`), `network`, `owner`, `observedAt`, `blockStart`, `blockEnd`, `atomicSnapshot` (`false`), `coverage` (`tokens`, `spenders`, `requestedPairs`, `knownAllowances`, `unknownAllowances`), `rows`, and `gaps`. `observedAt` is the same full UTC observation-start timestamp shown in the report, or `null` with a clock gap if unavailable. Each row contains `token`, `spender`, `decimals`, `balanceRaw`, `allowanceRaw`, `status`, `balanceCoveredRaw`, `permit2LayerOnly` and `notes`. Raw integers are decimal **strings**, unavailable fields are `null` (never fabricated `"0"`), decimals are integer or null, and addresses are full. Block fields are hex strings or null. Gaps and notes are arrays of strings. The JSON `gaps` array includes the same coverage exclusions as the readable report even when every read succeeds. Counts must agree with all rows, including failures.
 

@@ -70,3 +70,14 @@ These were inspected arguments, not an executed call. Empty `0x` stayed unknown;
 Skill **v0.1.1** makes three instructions explicit: compute amounts with a deterministic local tool, put the finding sentence first in the report template, and validate input/network/list bounds before unnecessary app-selection calls. These are the differences between the fixture-tested version and the live-run version. The normal token/spender list and classification rules did not change.
 
 The tests do not establish actual quota-denial behavior, fallback endpoint availability, account tier, or a live zero-balance permission. Those boundaries remain distinct from successful live reads.
+
+
+## v0.1.5 offline follow-up
+
+An independent synthetic evaluation on 2026-09-22 reused the mixed-permission inputs above with v0.1.5. It produced a Spanish report and JSON with six active permissions (two with zero balance), eight known allowances and one unknown. The report retained all nine pairs, full addresses, per-token Permit2 notes and coverage exclusions. It kept the supplied PAYG failure unknown without a retry or fallback, and did not infer approval history from zero values. A separate unknown-balance/unknown-decimals/zero-allowance fixture remained NONE with unknown balance coverage.
+
+This evaluation made **zero Alchemy calls**. Its timestamp and blocks were explicitly synthetic. It does not replace the historical live examples or establish terminal rendering behavior.
+
+The [local computation helper](../references/computation.md) has ten passing executable Node tests covering exact amounts, all four statuses, zero-balance permissions, missing/malformed data, matrix joins, scope validation, CLI input and import compatibility. The independent evaluation exposed an import failure in a JavaScript runtime without global process; the helper now guards CLI access and the regression is covered by a test. A direct import retest in that runtime succeeded and reproduced the matrix results.
+
+The compact report format separates each token's balance from the permission table, places notes underneath and keeps full addresses outside tables. The helper calculates values; narrative correctness is checked separately by this fixture evaluation.
