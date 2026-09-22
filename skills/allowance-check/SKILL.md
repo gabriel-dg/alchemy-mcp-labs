@@ -2,7 +2,7 @@
 name: allowance-check
 description: Check existing ERC-20 spending permissions with Alchemy MCP. Use when the user asks what can still spend my tokens, check old approvals, or review allowances for a wallet. Reads a bounded token-spender list on Ethereum mainnet and explains active permissions, including those with zero balance. Does not discover every spender or revoke approvals.
 metadata:
-  version: "0.1.3"
+  version: "0.1.4"
   type: workflow
 ---
 
@@ -99,12 +99,14 @@ List every full token and spender address once with its label and registry/user-
 Exact names, order, counts, and any fallback/retry.
 
 ## Gaps
-Failed reads and the coverage exclusions, including Permit2 when selected. State that no permissions were changed.
+- **Read failures:** List failed reads, or say "No failed reads" when all succeeded.
+- **Outside coverage:** Always list unlisted tokens/spenders, other networks, NFTs, native ETH, account delegation and unsubmitted signed permits. When Permit2 is selected, also state that its downstream application permissions, expirations and signed messages were not checked; only Token → Permit2 was read.
+- **Changes:** No permissions were changed.
 ```
 
-For all-zero results, say "No active allowances in the checked list." For partial results, say how many remain unknown next to the summary. Always display every requested pair. Balance/metadata gaps are reported separately from the allowance-read count.
+For all-zero results, say "No active allowances in the checked list." Do not replace this finding with "nothing to review" or "no further action needed"; the reads establish only the current allowances for the checked pairs, not whether a broader review is needed. For partial results, say how many remain unknown next to the summary. Always display every requested pair. Balance/metadata gaps are reported separately from the allowance-read count. Before delivering the report, check that Gaps includes both read failures and coverage exclusions. Successful reads do not remove the exclusions: never reduce the entire section to "None" or "No failed reads".
 
-With `Format: markdown+json`, append one valid JSON object containing `schemaVersion` (`"1"`), `network`, `owner`, `observedAt`, `blockStart`, `blockEnd`, `atomicSnapshot` (`false`), `coverage` (`tokens`, `spenders`, `requestedPairs`, `knownAllowances`, `unknownAllowances`), `rows`, and `gaps`. `observedAt` is the same full UTC observation-start timestamp shown in the report, or `null` with a clock gap if unavailable. Each row contains `token`, `spender`, `decimals`, `balanceRaw`, `allowanceRaw`, `status`, `balanceCoveredRaw`, `permit2LayerOnly` and `notes`. Raw integers are decimal **strings**, unavailable fields are `null` (never fabricated `"0"`), decimals are integer or null, and addresses are full. Block fields are hex strings or null. Gaps and notes are arrays of strings. Counts must agree with all rows, including failures.
+With `Format: markdown+json`, append one valid JSON object containing `schemaVersion` (`"1"`), `network`, `owner`, `observedAt`, `blockStart`, `blockEnd`, `atomicSnapshot` (`false`), `coverage` (`tokens`, `spenders`, `requestedPairs`, `knownAllowances`, `unknownAllowances`), `rows`, and `gaps`. `observedAt` is the same full UTC observation-start timestamp shown in the report, or `null` with a clock gap if unavailable. Each row contains `token`, `spender`, `decimals`, `balanceRaw`, `allowanceRaw`, `status`, `balanceCoveredRaw`, `permit2LayerOnly` and `notes`. Raw integers are decimal **strings**, unavailable fields are `null` (never fabricated `"0"`), decimals are integer or null, and addresses are full. Block fields are hex strings or null. Gaps and notes are arrays of strings. The JSON `gaps` array includes the same coverage exclusions as the readable report even when every read succeeds. Counts must agree with all rows, including failures.
 
 ## Publication boundary
 

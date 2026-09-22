@@ -79,7 +79,7 @@ Each live report names the address, network, observation start with a full UTC d
 
 **Permit2 has another layer.** Its row only reads permission from the token to Permit2. It does not check which downstream apps have Permit2 authorization or when those permissions expire. The report labels this boundary directly on the row.
 
-**Coverage matters.** Nine checked pairs are not every approval in your wallet. This lab excludes unlisted spenders and tokens, other networks, NFTs, native ETH, account delegation and unsubmitted signed permits. WETH is a separate token, not your ETH balance. A known contract is not a safety guarantee; unlimited permission alone is not evidence of a hack.
+**Coverage matters.** Nine checked pairs are not every approval in your wallet. This lab excludes unlisted spenders and tokens, other networks, NFTs, native ETH, account delegation and unsubmitted signed permits. WETH is a separate token, not your ETH balance. A known contract is not a safety guarantee; unlimited permission alone is not evidence of a hack. The report's Gaps section separates failed reads from coverage exclusions: "No failed reads" does not mean everything was checked. These exclusions remain visible even when all requested calls succeed.
 
 **What to do with a finding.** Review the named token and spender and whether you still use that application. Any decision to change an approval is a separate action in a trusted wallet interface. This lab only reads; it never creates a revoke transaction or a signing request.
 
@@ -91,7 +91,7 @@ Each live report names the address, network, observation start with a full UTC d
 
 **Check a specific app.** Replace `Spenders:` with the exact Ethereum spender address from your approval details or the app's documentation. Replace `Tokens:` with the token contract address if it is not one of the defaults. Use up to three comma-separated addresses in each list. Each custom list replaces that side of the defaults. A brand name alone is not enough to identify the contract.
 
-**Another chain?** Version 0.1.3 deliberately covers `eth-mainnet` only; token and router addresses are network-specific. Do not reuse this checklist on Base or Arbitrum by changing only the network line.
+**Another chain?** Version 0.1.4 deliberately covers `eth-mainnet` only; token and router addresses are network-specific. Do not reuse this checklist on Base or Arbitrum by changing only the network line.
 
 **Use it by name.** In Claude Code inside this repo: `/allowance-check 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D`. In other agents, use the copy-paste prompt. Add `Format: markdown+json` for a structured result.
 
