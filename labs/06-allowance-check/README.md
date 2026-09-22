@@ -22,6 +22,8 @@ No funds, wallet connection, public receiver or API key pasted into the chat are
 
 This owner is the documented Uniswap V2 Router02 protocol contract, not an individual wallet. The live example demonstrates API behavior; it does not audit or rate the protocol. The agent checks **USDC, USDT and WETH** against **Uniswap V2 Router02, the original Uniswap V3 SwapRouter, and Permit2**: nine specific token/contract pairs. These are examples, not a claim that the owner is at risk or a recommendation to approve those contracts.
 
+Here the router is the owner: the check asks who has permission to spend **its tokens**. It does not check permissions that you or other users gave the router. To check your permissions, replace `Address:` with your own public Ethereum address.
+
 ```text
 Read skills/allowance-check/SKILL.md in this repo and follow it exactly. List Alchemy apps and select one; ask me if several exist. Use only the allowed read tools. Never sign, send, broadcast, approve, or revoke. Explain the result in plain language and state exactly what was checked.
 
@@ -52,6 +54,8 @@ The live controls use a protocol contract or the zero address. Their actual repo
 
 The reference runs on 2026-09-22 UTC returned zero balances and zero allowances for every checked pair (nine in A, one each in B/C). Future live results may differ.
 
+Those successful zero reads demonstrate only the cases observed. They do not establish that routers always have zero balances or permissions, or test how the skill handles positive permissions and failed reads.
+
 To understand permission states before trying your own address, read this **fictional illustration**, not an onchain finding:
 
 | Example | Token balance | Permission | What it teaches |
@@ -63,7 +67,7 @@ To understand permission states before trying your own address, read this **fict
 
 The [offline behavioral tests](../../skills/allowance-check/examples/fixture-review.md) check these distinctions with synthetic data. No permission is changed to manufacture an interesting live demo.
 
-Each live report names the address, network, observation window, selected tokens/spenders and coverage count. Its table shows Token, Spender, Balance, Permission, Balance covered and Note. Every requested pair stays visible, even when zero or unknown. Full public contract addresses and the tools used make the result inspectable; app/account identifiers are omitted from published logs.
+Each live report names the address, network, observation start with a full UTC date and time, start/end blocks, selected tokens/spenders and coverage count. Its table shows Token, Spender, Balance, Permission, Balance covered and Note. Every requested pair stays visible, even when zero or unknown. Full public contract addresses and the tools used make the result inspectable; app/account identifiers are omitted from published logs.
 
 ## Reading the output
 
@@ -87,7 +91,7 @@ Each live report names the address, network, observation window, selected tokens
 
 **Check a specific app.** Replace `Spenders:` with the exact Ethereum spender address from your approval details or the app's documentation. Replace `Tokens:` with the token contract address if it is not one of the defaults. Use up to three comma-separated addresses in each list. Each custom list replaces that side of the defaults. A brand name alone is not enough to identify the contract.
 
-**Another chain?** Version 0.1.2 deliberately covers `eth-mainnet` only; token and router addresses are network-specific. Do not reuse this checklist on Base or Arbitrum by changing only the network line.
+**Another chain?** Version 0.1.3 deliberately covers `eth-mainnet` only; token and router addresses are network-specific. Do not reuse this checklist on Base or Arbitrum by changing only the network line.
 
 **Use it by name.** In Claude Code inside this repo: `/allowance-check 0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D`. In other agents, use the copy-paste prompt. Add `Format: markdown+json` for a structured result.
 

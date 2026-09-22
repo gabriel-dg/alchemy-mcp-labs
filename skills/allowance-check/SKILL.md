@@ -2,13 +2,15 @@
 name: allowance-check
 description: Check existing ERC-20 spending permissions with Alchemy MCP. Use when the user asks what can still spend my tokens, check old approvals, or review allowances for a wallet. Reads a bounded token-spender list on Ethereum mainnet and explains active permissions, including those with zero balance. Does not discover every spender or revoke approvals.
 metadata:
-  version: "0.1.2"
+  version: "0.1.3"
   type: workflow
 ---
 
 # allowance-check
 
 Answer "what permissions are still active for this address?" in plain language. An allowance is a token contract's recorded permission for a particular spender to use an owner's tokens. A spender can be a contract or an address. Lead with the finding, then the coverage. No wallet connection or signature is needed.
+
+The input address is the **owner** whose tokens and outgoing permissions are checked. When it is a router contract, explain that the report checks permissions over that router's own tokens, not permissions other users granted to the router.
 
 ## Scope and tools
 
@@ -30,7 +32,7 @@ Answer "what permissions are still active for this address?" in plain language. 
 
 Independent calls may run in batches of at most three. On a 429, wait briefly and retry the affected call once; record both attempts. Do not retry a 400 mentioning payg, upgrade, or billing, and do not switch endpoints to bypass that restriction. Record the gap and continue other supported reads. Other errors are not zero.
 
-1. `ethBlockNumber` before data reads. Record UTC observation time and start block; if unavailable, mark the window unknown and continue.
+1. `ethBlockNumber` before data reads. Read the actual current time from a local clock/tool and record the observation start as a full UTC timestamp (`YYYY-MM-DDTHH:mm:ssZ`), including seconds, not just the date. Record the start block separately. If either is unavailable, mark that field unknown and continue; do not infer a time from the session date, a reference run or a block number.
 2. `getTokenBalances` with the owner and an explicit `contractAddresses` array containing only selected tokens. Match results by address, not position. A missing token, per-token error, null, or malformed value is unknown, not zero. Never omit a zero-balance token from the allowance matrix.
 3. One `getTokenMetadata` per selected token. Use returned integer decimals (0 through 255) for exact formatting. If metadata fails, show raw base units and unknown decimals; retain a registry identity label only for an exact registry-address match. Flag any metadata/registry conflict. Do not infer identity from a symbol alone.
 4. One `getTokenAllowance` for every selected token/spender pair, passing `network`, `contract`, `owner`, `spender`. This method returns a decimal integer string; also handle an explicitly hex-prefixed integer if the server wraps the result that way. Extract the actual result, not a number from prose or an error. Accept only an unsigned integer in uint256 range.
@@ -40,7 +42,7 @@ Independent calls may run in batches of at most three. On a 429, wait briefly an
    Build padding with deterministic local string operations; never hash or encode by guessing. Accept only a full 32-byte hex result. Empty `0x`, null, a revert, or another length is unknown. Record fallback provenance. A fallback does not erase the original error.
 6. `ethBlockNumber` after reads. Report the start/end window and UTC observation time. Enhanced methods do not expose a block parameter: this is a current-state observation across calls, **not an atomic snapshot**, even if block numbers agree. Do not claim all reads came from either block or from finalized state.
 
-No fallback metadata calls, spender bytecode reads, price requests, or automatic reruns. The default success path is 17 calls including app selection; a one-token/one-spender path is seven. Count actual attempts in the report.
+No fallback metadata calls, spender bytecode reads, price requests, or automatic reruns. The default success path is 17 calls including app selection; a one-token/one-spender path is seven. Count actual attempts from the tool log, not from these expected totals. Local clock reads and computation are not Alchemy calls.
 
 ## Interpret without overclaiming
 
@@ -68,6 +70,8 @@ Highlight:
 
 Unlimited is not proof of compromise; a known spender is not a safety guarantee. Zero means no allowance now for that pair, not "never approved" or "wallet safe". NFTs, native ETH, unlisted tokens/spenders, other chains, account delegation and unsubmitted signed permits are outside coverage. WETH is a token; it is not native ETH.
 
+Keep progress updates and conclusions tied to the returned data. A router label does not establish that balances or allowances must be zero, or that routers never hold tokens or grant permissions. Explain zero balances and zero allowances as separate observations. A successful all-zero control exercises those reads only; it does not validate positive or unlimited permissions, error handling, or the entire skill.
+
 ## Report
 
 Use the user's language, with short plain-language explanations. Keep status codes stable. Lead with one sentence giving the number of active permissions **among the checked pairs**, with the zero-balance finding if present. Do not use a wallet-wide safety verdict.
@@ -78,7 +82,7 @@ One-sentence finding limited to the checked pairs, including unknown allowance c
 
 - **Address:** full owner address
 - **Network:** eth-mainnet
-- **Observed:** UTC; start/end blocks, current reads (not an atomic snapshot)
+- **Observed:** full UTC observation-start timestamp; start/end blocks, current reads (not an atomic snapshot)
 - **Summary:** findings limited to this list
 - **Coverage:** T tokens × S spenders = P requested pairs; K allowance reads succeeded, U unknown
 
@@ -100,7 +104,7 @@ Failed reads and the coverage exclusions, including Permit2 when selected. State
 
 For all-zero results, say "No active allowances in the checked list." For partial results, say how many remain unknown next to the summary. Always display every requested pair. Balance/metadata gaps are reported separately from the allowance-read count.
 
-With `Format: markdown+json`, append one valid JSON object containing `schemaVersion` (`"1"`), `network`, `owner`, `observedAt`, `blockStart`, `blockEnd`, `atomicSnapshot` (`false`), `coverage` (`tokens`, `spenders`, `requestedPairs`, `knownAllowances`, `unknownAllowances`), `rows`, and `gaps`. Each row contains `token`, `spender`, `decimals`, `balanceRaw`, `allowanceRaw`, `status`, `balanceCoveredRaw`, `permit2LayerOnly` and `notes`. Raw integers are decimal **strings**, unavailable fields are `null` (never fabricated `"0"`), decimals are integer or null, and addresses are full. Block fields are hex strings or null. Gaps and notes are arrays of strings. Counts must agree with all rows, including failures.
+With `Format: markdown+json`, append one valid JSON object containing `schemaVersion` (`"1"`), `network`, `owner`, `observedAt`, `blockStart`, `blockEnd`, `atomicSnapshot` (`false`), `coverage` (`tokens`, `spenders`, `requestedPairs`, `knownAllowances`, `unknownAllowances`), `rows`, and `gaps`. `observedAt` is the same full UTC observation-start timestamp shown in the report, or `null` with a clock gap if unavailable. Each row contains `token`, `spender`, `decimals`, `balanceRaw`, `allowanceRaw`, `status`, `balanceCoveredRaw`, `permit2LayerOnly` and `notes`. Raw integers are decimal **strings**, unavailable fields are `null` (never fabricated `"0"`), decimals are integer or null, and addresses are full. Block fields are hex strings or null. Gaps and notes are arrays of strings. Counts must agree with all rows, including failures.
 
 ## Publication boundary
 
